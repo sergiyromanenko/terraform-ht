@@ -19,16 +19,8 @@ cat > /var/www/html/.htaccess << EOF
 Options +FollowSymlinks
 RewriteEngine on
 RewriteBase /
-RewriteRule ^wp-content/uploads/(.*)$ http://${cloudfront_domain_name}/\$1 [R=301,NC,L]
+RewriteRule ^wp-content/uploads/(.*)$ http://${cloudfront_domain_name}/$1 [R=301,NC,L]
 # BEGIN WordPress
-<IfModule mod_rewrite.c>
-RewriteEngine On
-RewriteBase /
-RewriteRule ^index\.php$ - [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.php [L]
-</IfModule>
 
 # END WordPress
 EOF
