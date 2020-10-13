@@ -1,0 +1,126 @@
+                 Building a Fault Tolerant WordPress Site at AWS (manualy)
+
++0. Create VPC (Frankfurt):
+https://eu-central-1.console.aws.amazon.com/vpc/home?region=eu-central-1#vpcs:
+my-vpc-01-hometask-manualy
+
+Create two Public Subnets (Frankfurt):
+https://eu-central-1.console.aws.amazon.com/vpc/home?region=eu-central-1#subnets:SubnetId=subnet-0fc30696fcb072c87;sort=SubnetId
+10.0.1.0/24   eu-central-1a  Subnet1-my-vpc-01-hometask-manualy
+10.0.2.0/24   eu-central-1b  Subnet2-my-vpc-01-hometask-manualy
+
+Create Internet Gateway for internet access from public subnet:
+VPC1-hometask-manulay-test-GW
+
+and attach it to VPC1
+
+In Route Tables create route table for public subnets in VPC1:
+RouteTable1forVPC1-hometask-manualy (rtb-024b691e621dc658c)
+
+In Route Tables (Routes tab) add to Route table default route to 0.0.0.0/0 to intenet gateway
+
+In Subnets Edit route table association (change Route Table ID to new RouteTable1forVPC1-hometask-manualy)  for subnets:
+Subnet1-my-vpc-01-hometask-manualy
+Subnet1-my-vpc-01-hometask-manualy
+
+
+
++1. Set up S3-buckets for Media Assets(make it public) and Wordpress code;
+https://s3.console.aws.amazon.com/s3/home?region=eu-central-1
+
+
+
++2. Create CloudFront distribution (Web);
+Domain Name
+d11klc99fd4buf.cloudfront.net
+
+
++3. Create Security Groups for Web EC2 (for VPC1) instances and RDS. 
+VPC1-MyEC2WebServersSecGroup
+allow web, ssh access to ec2 in public subnets
+For RDS Security Group open an access from Web Security Group.
+
+https://eu-central-1.console.aws.amazon.com/ec2/v2/home?region=eu-central-1#SecurityGroups:
+
+
+4.  Spin up RDS instance with Multi-AZ support. Create database;
+
+
++5. Create IAM role for EC2 instance in order to have the access to S3 bucket;
+
+
++6.  Launch EC2 instance with installed Web server, php, php-mysql and downloaded WordPress;
+setup for new EC2- vpc1, sec group from vpc1, iam role for s3 access, key-pair
+
+https://aws.amazon.com/getting-started/hands-on/deploy-wordpress-with-amazon-rds/5/
+
+7. Install WordPress (Database Host = RDS endpoint, Database Name = RDS database), 
+add new post with images;
+
+8. Upload files(images in WordPress) to Media Assets S3 bucket and WordPress code
+ to another bucket ;
+
++9. Create Application Load Balancer, attach Web Security Group, 
+configure routing(Target Group, Health Checks);
+
+DNS name
+LoadBalancerVPC1manualyHT-527664866.eu-central-1.elb.amazonaws.com (A Record)
+
+
+10. Optional!!! Register domain name in Route53. 
+Create Hosted Zone and point ALB to Route53;
+
++11. Register EC2 instance to Target Group;
+
++12. Add crontab schedule task for “Read” node; 
+*/1 * * * * root aws s3 sync - -delete s3://{ Name of WordPress Code S3 bucket} /var/www/html
+
+13. Create AMI image for “Read” node;
+
++14. Add crontab schedule tasks for “Write” node 
+*/1 * * * * root aws s3 sync - -delete /var/www/html s3://{ Name of WordPress Code S3 bucket} 
+*/1 * * * * root aws s3 sync - -delete /var/www/html/wp-content/uploads s3://{ Name of Media Assets S3 bucket}
+
+*/1 * * * * aws s3 sync --delete /var/www/html s3://tf-wordpress-code-tolbr
+*/1 * * * * aws s3 sync --delete /var/www/html/wp-content/uploads s3://tf-media-assets-tolbr
+
+Before don't forget:
+    cd /var/www/html/wp-content/
+    aws s3 cp uploads s3://tf-media-assets-tolbr --recursive
+
+change AllowOverride None to AllowOverride All for httpd.conf in <Directory "/var/www/html">
+
+check http://d2vyc02hq98kmf.cloudfront.net/2020/10/external-content.duckduckgo.com_.jpeg
+
+15. Create AutoScaling Group with 2 instances by using “Read” node AMI
+
+
+
+
+Outputs example:
+
+alb_name = LB-for-VPC-test-ht-tf-924627394.eu-central-1.elb.amazonaws.com
+aws_instances_subnet1_ids = i-0fa0da10e6cff1182
+aws_instances_subnet2_ids = i-00f8dc35279fd348a
+cloudfront_distribution_s3_media_assets_domain_name = d2vyc02hq98kmf.cloudfront.net
+ec2_server_subnet1_public_ip = 18.196.40.21
+ec2_server_subnet2_public_ip = 18.197.100.146
+media_assets_bucket_s3_bucket_arn = arn:aws:s3:::tf-media-assets-tolbr
+media_assets_bucket_s3_bucket_domain_name = tf-media-assets-tolbr.s3.amazonaws.com
+media_assets_bucket_s3_bucket_name = tf-media-assets-tolbr
+public_subnet1_id = subnet-0901381bd63aa6425
+public_subnet2_id = subnet-066fb2b28644f6ff9
+rds_db_address = test-ht-tf-rds.cb4vsp8klg3j.eu-central-1.rds.amazonaws.com
+rds_db_name = wordpressdb
+rds_db_password = o4IOK2ax3mOA
+rds_db_port = 3306
+rds_db_username = mysqladmin
+test_public_subnet_ids = [
+  "subnet-0901381bd63aa6425",
+  "subnet-066fb2b28644f6ff9",
+]
+test_public_vpc_id = vpc-04fd00fd621237fc6
+vpc-ec2-secgroup = sg-03906374c70f171dd
+vpc-rds-secgroup = sg-0b1dbd29e2f841bf7
+wordpress_code_s3_bucket_arn = arn:aws:s3:::tf-wordpress-code-tolbr
+
