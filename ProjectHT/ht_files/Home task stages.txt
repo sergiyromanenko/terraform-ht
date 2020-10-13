@@ -1,0 +1,39 @@
+                 Building a Fault Tolerant WordPress Site at AWS (manualy)
+
+0. Create VPC (Frankfurt):
+
+-Create two Public Subnets (Frankfurt)
+-Create Internet Gateway for internet access from public subnet and attach it to VPC
+-In Route Tables create route table for public subnets in VPC1
+-In Route Tables (Routes tab) add to Route table default route to 0.0.0.0/0 to intenet gateway
+-In Subnets Edit route table association (change Route Table ID to new RouteTableforVPC)  for subnets
+
+1. Set up S3-buckets for Media Assets(make it public) and Wordpress code;
+2. Create CloudFront distribution (Web);
+3. Create 2 Security Groups for Web EC2 (for VPC1) instances and RDS. 
+4.  Spin up RDS instance with Multi-AZ support. Create database;
+5. Create IAM role for EC2 instance in order to have the access to S3 bucket;
+6.  Launch EC2 instance with installed Web server, php, php-mysql and downloaded WordPress;
+setup for new EC2- vpc1, sec group from vpc1, iam role for s3 access, key-pair
+7. Install WordPress (Database Host = RDS endpoint, Database Name = RDS database), 
+add new post with images;
+8. Upload files(images in WordPress) to Media Assets S3 bucket and WordPress code
+ to another bucket ;
+9. Create Application Load Balancer, attach Web Security Group, 
+configure routing(Target Group, Health Checks);
+DNS name
+10. Optional!!! Register domain name in Route53. 
+Create Hosted Zone and point ALB to Route53;
+
+11. Register EC2 instance to Target Group;
+
+12. Add crontab schedule task for “Read” node; 
+*/1 * * * * aws s3 sync --delete s3://{ Name of WordPress Code S3 bucket} /var/www/html
+
+13. Create AMI image for “Read” node;
+
+14. Add crontab schedule tasks for “Write” node 
+*/1 * * * * aws s3 sync --delete /var/www/html s3://{ Name of WordPress Code S3 bucket} 
+*/1 * * * * aws s3 sync - -delete /var/www/html/wp-content/uploads s3://{ Name of Media Assets S3 bucket}
+
+15. Create AutoScaling Group with 2 instances by using “Read” node AMI
